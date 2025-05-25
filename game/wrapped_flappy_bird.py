@@ -140,7 +140,7 @@ class GameState:
             reward += d_reward_2m
 
         # СТОЛКНОВЕНИЕ 
-        d_reward_3 = -9
+        d_reward_3 = - 9
         if isCrash:
             terminal = True
             reward += d_reward_3  # Большое наказание за столкновение
@@ -261,7 +261,7 @@ def get_info(player, upperPipes, lowerPipes):
             uPipeRect = pygame.Rect(uPipe['x'], uPipe['y'], PIPE_WIDTH, PIPE_HEIGHT)
             lPipeRect = pygame.Rect(lPipe['x'], lPipe['y'], PIPE_WIDTH, PIPE_HEIGHT)
 
-            return [playerRect.y+playerRect.height/2, uPipeRect.y + uPipeRect.height,  lPipeRect.y, playerRect.x, uPipeRect.x]
+            return [playerRect.y+playerRect.height/2, uPipeRect.y + uPipeRect.height,  lPipeRect.y, uPipeRect.x - playerRect.x]
     
 
 def pixelyCollision(rect1, rect2, hitmask1, hitmask2):
