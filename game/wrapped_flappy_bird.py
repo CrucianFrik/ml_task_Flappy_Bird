@@ -152,6 +152,8 @@ class GameState:
         for uPipe, lPipe in zip(self.upperPipes, self.lowerPipes):
             SCREEN.blit(IMAGES['pipe'][0], (uPipe['x'], uPipe['y']))
             SCREEN.blit(IMAGES['pipe'][1], (lPipe['x'], lPipe['y']))
+        
+        showScore(self.score)
 
         SCREEN.blit(IMAGES['base'], (self.basex, BASEY))
         visibleRot = self.playerRotThr
