@@ -244,7 +244,7 @@ def checkDirca(player, upperPipes, lowerPipes):
             continue
         player_y = playerRect.y+playerRect.height/2
         w, h = pygame.display.get_surface().get_size()
-    return -(player_y - (uPipeRect.y + uPipeRect.height)) * (player_y - lPipeRect.y) / h
+        return -(player_y - (uPipeRect.y + uPipeRect.height)) * (player_y - lPipeRect.y) / h
     
 
 def get_info(player, upperPipes, lowerPipes):
