@@ -2,10 +2,11 @@ import random
 from itertools import cycle
 import numpy as np
 import pygame
+from pathlib import Path
 
 import game.flappy_bird_utils as flappy_bird_utils
 
-FPS = 45
+FPS = 400
 SCREENWIDTH = 288
 SCREENHEIGHT = 512
 
@@ -28,7 +29,7 @@ PLAYER_INDEX_GEN = cycle([0, 1, 2, 1])
 
 
 class GameState:
-    def __init__(self):
+    def __init__(self, save_frames=False):
         self.score = self.playerIndex = self.loopIter = 0
         self.playerx = int(SCREENWIDTH * 0.2)
         self.playery = int((SCREENHEIGHT - PLAYER_HEIGHT) / 2)
@@ -56,6 +57,8 @@ class GameState:
         self.playerRot = 45
         self.playerVelRot = 3
         self.playerRotThr = 20
+        self.step = 0
+        self.saveFrames = save_frames
 
     def frame_step(self, input_actions):
         pygame.event.pump()
@@ -90,13 +93,13 @@ class GameState:
         # ПРОХОЖДЕНИЕ ТРУБЫ
         d_reward_1 = 5
         # награда даётся небольшое время после прохождения трубы, а не один раз
-        if pipeMidPos <= playerMidPos < pipeMidPos + playerMidPos:
-            if not isCrash:
-                reward += d_reward_1
+        #if pipeMidPos <= playerMidPos < pipeMidPos + playerMidPos:
+        #    if not isCrash:
+        #        reward += d_reward_1
                 
         if pipeMidPos <= playerMidPos < pipeMidPos + 3:
             self.score += 1
-            print("""\nGOL\n""")
+            reward += 1
                 
 
         if (self.loopIter + 1) % 3 == 0:
@@ -135,17 +138,17 @@ class GameState:
         d_reward_2p = 2
         d_reward_2m = - 0.2
         if isDirca:
-            reward += d_reward_2p
+            reward += isDirca
         else:
             reward += d_reward_2m
 
         # СТОЛКНОВЕНИЕ 
         d_reward_3 = - 9
         if isCrash:
-            terminal = True
-            reward += d_reward_3  # Большое наказание за столкновение
+            terminal = self.score + 1
+            reward += isCrash  # Большое наказание за столкновение
             self.score = 0
-            self.__init__()
+            #self.__init__()
 
         SCREEN.blit(IMAGES['background'], (0, 0))
 
@@ -164,6 +167,15 @@ class GameState:
 
         pygame.display.update()
         FPSCLOCK.tick(FPS)
+        coords.append(self.playerVelY)
+        if self.saveFrames:
+            pygame.image.save(SCREEN, f"./video_frames/frame_{self.step:08d}.jpeg")
+            if terminal and terminal < 101:
+                for p in Path('./video_frames').glob('*.jpeg'):
+                    p.unlink()
+
+        self.step += 1
+
 
         return coords, reward, terminal
 
@@ -205,7 +217,7 @@ def checkCrash(player, upperPipes, lowerPipes):
     player['h'] = IMAGES['player'][0].get_height()
 
     if player['y'] + player['h'] >= BASEY - 1:
-        return True
+        return -20
     else:
         playerRect = pygame.Rect(player['x'], player['y'],
                                 player['w'], player['h'])
@@ -222,9 +234,9 @@ def checkCrash(player, upperPipes, lowerPipes):
             lCollide = pixelCollision(playerRect, lPipeRect, pHitMask, lHitmask)
 
             if uCollide or lCollide:
-                return True
+                return -9
 
-    return False
+    return 0
 
 def checkDirca(player, upperPipes, lowerPipes):
     """returns True if player collders with base or pipes."""
@@ -238,11 +250,14 @@ def checkDirca(player, upperPipes, lowerPipes):
         playerRect = pygame.Rect(player['x'], player['y'],
                                 player['w'], player['h'])
 
-        for uPipe, lPipe in zip(upperPipes[:1], lowerPipes[:1]):
+        for uPipe, lPipe in zip(upperPipes, lowerPipes):
             uPipeRect = pygame.Rect(uPipe['x'], uPipe['y'], PIPE_WIDTH, PIPE_HEIGHT)
             lPipeRect = pygame.Rect(lPipe['x'], lPipe['y'], PIPE_WIDTH, PIPE_HEIGHT)
-
-
+            if playerRect.x < uPipeRect.x:
+                continue
+            player_y = playerRect.y+playerRect.height/2
+            w, h = pygame.display.get_surface().get_size()
+            return -(player_y - (uPipeRect.y + uPipeRect.height)) * (player_y - lPipeRect.y) / h
             if uPipeRect.y + uPipeRect.height <  playerRect.y+playerRect.height/2 < lPipeRect.y:
                 return True
 
@@ -253,17 +268,26 @@ def get_info(player, upperPipes, lowerPipes):
     player['w'] = IMAGES['player'][0].get_width()
     player['h'] = IMAGES['player'][0].get_height()
 
-    if player['y'] + player['h'] >= BASEY - 1:
+    if False and player['y'] + player['h'] >= BASEY - 1:
         return True
     else:
         playerRect = pygame.Rect(player['x'], player['y'],
                                 player['w'], player['h'])
-
-        for uPipe, lPipe in zip(upperPipes[:1], lowerPipes[:1]):
+        
+        res = [playerRect.y+playerRect.height/2]
+        for uPipe, lPipe in zip(upperPipes, lowerPipes):
             uPipeRect = pygame.Rect(uPipe['x'], uPipe['y'], PIPE_WIDTH, PIPE_HEIGHT)
             lPipeRect = pygame.Rect(lPipe['x'], lPipe['y'], PIPE_WIDTH, PIPE_HEIGHT)
-
-            return [playerRect.y+playerRect.height/2, uPipeRect.y + uPipeRect.height,  lPipeRect.y, uPipeRect.x - playerRect.x]
+            if playerRect.x > uPipeRect.x:
+                continue
+            res.extend([uPipeRect.y + uPipeRect.height,  lPipeRect.y, uPipeRect.x - playerRect.x])
+            return res
+        if len(res) < 4:
+            while len(res) < 4:
+                res.append(0)
+        else:
+            res = res[:4]
+        return res
     
 
 def pixelyCollision(rect1, rect2, hitmask1, hitmask2):
