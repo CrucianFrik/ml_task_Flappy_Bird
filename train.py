@@ -6,7 +6,7 @@ import random
 from collections import deque
 import wandb
 from config import config
-from game.wrapped_flappy_bird_edited import GameState
+from game.wrapped_flappy_bird import GameState
 
 
 class NeuralNetwork(nn.Module):
