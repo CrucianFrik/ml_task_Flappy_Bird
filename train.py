@@ -118,7 +118,7 @@ def train():
                 break
 
         if (episode+1) % 100 == 0:
-            torch.save(policy_net, f'pretrained_model/gpt_{episode}.pt')
+            torch.save(policy_net, f'pretrained_model/model_{episode}.pt')
 
         # Decay epsilon
         if epsilon > config['EPSILON_MIN']:
